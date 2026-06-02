@@ -1,0 +1,46 @@
+title: Digit Recognizer — CNN on MNIST
+slug: digit-recognizer
+category: ai-ml
+date: 2026-05-DD
+featured: false
+tags: deep-learning, neural-network, classification, computer-vision, azure, deployment, REST-API, docker, CI-CD, jupyter, web-app
+tech_stack: Python, TensorFlow, Keras, CNN, scikit-learn, NumPy, Matplotlib, Pillow, FastAPI, Uvicorn, Docker, Azure App Service, GitHub Actions, pytest
+repo_url: https://github.com/xavier-oc-programming/digit-recognizer
+live_url: https://digit-recognizer-xoc.azurewebsites.net
+demo_url: https://digit-recognizer-xoc.azurewebsites.net
+short_description: Draw a digit on the canvas — the CNN predicts it in real time. Trained on 60,000 MNIST images. Confidence score and probability bar chart across all 10 digits. Live on Azure App Service.
+full_description: |
+  A handwritten digit recognition system built around an interactive canvas demo. The user draws
+  a digit with their mouse or finger and the model returns the predicted digit, confidence score,
+  and a probability distribution across all 10 classes — updated in real time as they draw.
+
+  The model is a two-block CNN: each block applies two Conv2D layers with BatchNormalization and
+  MaxPooling, followed by Dropout regularisation. A 512-unit Dense layer and softmax output
+  complete the classifier. Trained on 60,000 MNIST images with EarlyStopping on validation accuracy.
+
+  A subtle but critical preprocessing step: MNIST uses white digits on black background, while the
+  HTML canvas draws black on white. The pixel values are inverted (1.0 - pixel) before inference
+  to align the input distribution with the training data. This is the kind of silent failure that
+  breaks deployed models when training and inference preprocessing pipelines diverge.
+
+  Served via FastAPI with auto-generated OpenAPI docs at /docs. Deployed to Azure App Service
+  with the trained model committed to the repository.
+
+problem: >
+  Demonstrating CNN image classification with an interactive real-time demo — and handling the
+  training-inference preprocessing mismatch between MNIST convention (white-on-black) and
+  canvas convention (black-on-white).
+
+solution: >
+  Two-block CNN with BatchNormalization and Dropout trained on MNIST. FastAPI serves POST /predict
+  accepting base64-encoded PNG from the canvas. Pixel inversion applied before inference.
+  EarlyStopping prevents overfitting. Model committed to repository for zero-retraining deployment.
+
+challenges: >
+  The canvas-to-model preprocessing pipeline requires exact alignment with training preprocessing.
+  MNIST images are white digits on black background; the HTML canvas produces the opposite.
+  Missing the inversion step produces confident wrong predictions on every input — a silent failure
+  with no error message. The fix is one line but the diagnosis requires understanding both the
+  training data format and the inference input format.
+
+results: TBD — populate after running train.py. Include test accuracy, best epoch, hardest digit pairs from confusion matrix.

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Digit Recognizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111827;
+      color: #f9fafb;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    /* Header */
+    header { text-align: center; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #f9fafb; letter-spacing: -0.5px; }
+    header p.subtitle { margin-top: 6px; color: #9ca3af; font-size: 1rem; }
+    header p.meta { margin-top: 4px; color: #6b7280; font-size: 0.8rem; }
+    header .accent { color: #10B981; }
+
+    /* Canvas area */
+    .canvas-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    #canvas {
+      background: #ffffff;
+      border-radius: 12px;
+      cursor: crosshair;
+      touch-action: none;
+      display: block;
+      width: 280px;
+      height: 280px;
+    }
+
+    .canvas-hint {
+      color: #6b7280;
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    .btn-clear {
+      background: #1f2937;
+      color: #d1d5db;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 8px 24px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-clear:hover { background: #374151; border-color: #4b5563; }
+
+    /* Results panel */
+    #results {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Big digit */
+    .prediction-main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #predicted-digit {
+      font-size: 120px;
+      font-weight: 700;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    #confidence-label {
+      font-size: 1.1rem;
+      color: #9ca3af;
+    }
+
+    #uncertain-label {
+      font-size: 0.85rem;
+      color: #f59e0b;
+      display: none;
+    }
+
+    .loading-indicator {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      color: #6b7280;
+      font-size: 0.85rem;
+    }
+    .loading-indicator.active { display: flex; }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #374151;
+      border-top-color: #10B981;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Bar chart */
+    .bar-chart-section { width: 100%; }
+    .bar-chart-title {
+      font-size: 0.78rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .bar-label {
+      width: 14px;
+      text-align: right;
+      font-size: 0.82rem;
+      color: #9ca3af;
+      flex-shrink: 0;
+    }
+
+    .bar-track {
+      flex: 1;
+      background: #1f2937;
+      border-radius: 4px;
+      height: 18px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #374151;
+      border-radius: 4px;
+      transition: width 0.25s ease;
+      min-width: 0;
+    }
+
+    .bar-fill.predicted { background: #10B981; }
+
+    .bar-pct {
+      width: 36px;
+      text-align: right;
+      font-size: 0.78rem;
+      color: #6b7280;
+      flex-shrink: 0;
+    }
+
+    /* Top 3 */
+    .top3-section { width: 100%; }
+    .top3-title {
+      font-size: 0.78rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .top3-cards {
+      display: flex;
+      gap: 8px;
+    }
+
+    .top3-card {
+      flex: 1;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .top3-card .rank { font-size: 0.7rem; color: #6b7280; margin-bottom: 2px; }
+    .top3-card .top3-digit { font-size: 1.6rem; font-weight: 700; color: #f9fafb; }
+    .top3-card .top3-conf { font-size: 0.78rem; color: #9ca3af; margin-top: 2px; }
+    .top3-card.first { border-color: #10B981; }
+    .top3-card.first .top3-digit { color: #10B981; }
+
+    /* Footer */
+    footer {
+      margin-top: 8px;
+      text-align: center;
+      color: #4b5563;
+      font-size: 0.75rem;
+    }
+    footer a { color: #6b7280; text-decoration: none; }
+    footer a:hover { color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Digit <span class="accent">Recognizer</span></h1>
+      <p class="subtitle">Draw a digit — the model predicts it</p>
+      <p class="meta" id="header-meta">CNN trained on 60,000 MNIST examples</p>
+    </header>
+
+    <div class="canvas-wrapper">
+      <canvas id="canvas" width="280" height="280"></canvas>
+      <p class="canvas-hint">Draw with mouse or finger</p>
+      <button class="btn-clear" id="btn-clear">Clear</button>
+    </div>
+
+    <div class="loading-indicator" id="loading">
+      <div class="spinner"></div>
+      <span>Predicting…</span>
+    </div>
+
+    <div id="results">
+      <div class="prediction-main">
+        <div id="predicted-digit">—</div>
+        <div id="confidence-label"></div>
+        <div id="uncertain-label">Uncertain — try drawing more clearly</div>
+      </div>
+
+      <div class="bar-chart-section">
+        <div class="bar-chart-title">Probability across all digits</div>
+        <div id="bar-chart"></div>
+      </div>
+
+      <div class="top3-section">
+        <div class="top3-title">Top 3 predictions</div>
+        <div class="top3-cards" id="top3-cards"></div>
+      </div>
+    </div>
+
+    <footer>
+      Model: CNN &nbsp;·&nbsp; Architecture: 2 Conv blocks + Dense &nbsp;·&nbsp;
+      Test accuracy: <span id="footer-acc">—</span>%
+      &nbsp;·&nbsp;
+      <a href="/docs" target="_blank">API docs</a>
+    </footer>
+
+  </div>
+
+  <script>
+    // ── Canvas setup ──────────────────────────────────────────────────────────
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 18;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    let drawing = false;
+    let debounceTimer = null;
+    let hasDrawing = false;
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width  / rect.width;
+      const scaleY = canvas.height / rect.height;
+      if (e.touches) {
+        return {
+          x: (e.touches[0].clientX - rect.left) * scaleX,
+          y: (e.touches[0].clientY - rect.top)  * scaleY,
+        };
+      }
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top)  * scaleY,
+      };
+    }
+
+    function startDraw(e) {
+      e.preventDefault();
+      drawing = true;
+      const p = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+    }
+
+    function draw(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const p = getPos(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      hasDrawing = true;
+      schedulePrediction();
+    }
+
+    function endDraw(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      drawing = false;
+    }
+
+    canvas.addEventListener('mousedown',  startDraw);
+    canvas.addEventListener('mousemove',  draw);
+    canvas.addEventListener('mouseup',    endDraw);
+    canvas.addEventListener('mouseleave', endDraw);
+
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove',  draw,      { passive: false });
+    canvas.addEventListener('touchend',   endDraw,   { passive: false });
+
+    // ── Clear ─────────────────────────────────────────────────────────────────
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      hasDrawing = false;
+      clearTimeout(debounceTimer);
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('loading').classList.remove('active');
+    });
+
+    // ── Prediction ────────────────────────────────────────────────────────────
+    function schedulePrediction() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        if (hasDrawing) sendPrediction();
+      }, 300);
+    }
+
+    async function sendPrediction() {
+      document.getElementById('loading').classList.add('active');
+      const imageData = canvas.toDataURL('image/png').split(',')[1];
+      try {
+        const resp = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_data: imageData }),
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        requestAnimationFrame(() => renderResult(data));
+      } catch (_) {
+        // Network error — silently ignore, user can keep drawing
+      } finally {
+        document.getElementById('loading').classList.remove('active');
+      }
+    }
+
+    // ── Render result ─────────────────────────────────────────────────────────
+    function renderResult(data) {
+      document.getElementById('results').style.display = 'flex';
+
+      const digitEl = document.getElementById('predicted-digit');
+      digitEl.textContent = data.digit;
+      if (data.confidence >= 0.9) {
+        digitEl.style.color = '#10B981';
+      } else if (data.confidence >= 0.7) {
+        digitEl.style.color = '#f59e0b';
+      } else {
+        digitEl.style.color = '#ef4444';
+      }
+
+      document.getElementById('confidence-label').textContent =
+        `${data.confidence_pct}% confident`;
+
+      document.getElementById('uncertain-label').style.display =
+        data.is_uncertain ? 'block' : 'none';
+
+      // Bar chart
+      const chartEl = document.getElementById('bar-chart');
+      chartEl.innerHTML = '';
+      data.probabilities.forEach((prob, digit) => {
+        const pct = Math.round(prob * 100);
+        const isPredicted = digit === data.digit;
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+          <span class="bar-label">${digit}</span>
+          <div class="bar-track">
+            <div class="bar-fill ${isPredicted ? 'predicted' : ''}"
+                 style="width:${Math.max(pct, pct > 0 ? 2 : 0)}%"></div>
+          </div>
+          <span class="bar-pct">${pct > 0 ? pct + '%' : ''}</span>
+        `;
+        chartEl.appendChild(row);
+      });
+
+      // Top 3
+      const top3El = document.getElementById('top3-cards');
+      top3El.innerHTML = '';
+      const ranks = ['1st', '2nd', '3rd'];
+      data.top3.forEach((item, i) => {
+        const card = document.createElement('div');
+        card.className = `top3-card ${i === 0 ? 'first' : ''}`;
+        card.innerHTML = `
+          <div class="rank">${ranks[i]}</div>
+          <div class="top3-digit">${item.digit}</div>
+          <div class="top3-conf">${item.confidence_pct}%</div>
+        `;
+        top3El.appendChild(card);
+      });
+    }
+
+    // ── Load model accuracy on page load ─────────────────────────────────────
+    fetch('/api/model-info')
+      .then(r => r.json())
+      .then(data => {
+        if (data.test_accuracy != null) {
+          const acc = (data.test_accuracy * 100).toFixed(2);
+          document.getElementById('header-meta').textContent =
+            `CNN trained on 60,000 MNIST examples · ${acc}% test accuracy`;
+          document.getElementById('footer-acc').textContent = acc;
+        }
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>
