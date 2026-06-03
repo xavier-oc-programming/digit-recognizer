@@ -139,9 +139,29 @@ The full preprocessing pipeline (which must exactly mirror training):
 
 ## 5. Results
 
-*TBD — run `python train.py` and update this section.*
+| Metric | Value |
+|---|---|
+| Test accuracy | **99.30%** |
+| Test loss | 0.0199 |
+| Best epoch | 8 / 20 (EarlyStopping) |
+| Baseline (random) | 10.0% |
 
-Expected: ~99.2% test accuracy. Hardest pairs: 4/9, 7/1, 3/8.
+**Per-class F1 scores** — all digits above 98.9%:
+
+| Digit | Precision | Recall | F1 |
+|---|---|---|---|
+| 0 | 99.4% | 99.5% | 99.4% |
+| 1 | 99.6% | 99.6% | 99.6% |
+| 2 | 99.7% | 99.1% | 99.4% |
+| 3 | 99.3% | 99.7% | 99.5% |
+| 4 | 99.2% | 99.8% | 99.5% |
+| 5 | 98.7% | 99.2% | 98.9% |
+| 6 | 99.4% | 99.3% | 99.3% |
+| 7 | 98.6% | 99.4% | 99.0% |
+| 8 | 99.6% | 98.9% | 99.2% |
+| 9 | 99.5% | 98.4% | 99.0% |
+
+Hardest digit pairs: **9→4** (9s with closed loops misread as 4), **7→1** (7s without crossbars misread as 1), **5→8** (5s with closed tops misread as 8). These are the same ambiguities that confuse humans.
 
 ---
 
