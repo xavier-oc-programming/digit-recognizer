@@ -290,6 +290,10 @@ Dropout and BatchNorm address different failure modes. Dropout prevents co-adapt
 
 Described in full in section 4. The short version: MNIST convention is white strokes on black; human convention is black strokes on white. The mismatch produces a silent failure — no exception, no warning, just confident wrong predictions on every input. The fix is one line but requires knowing both the training data format and the inference input format. This is the canonical example of a preprocessing divergence bug.
 
+**Why `TF_METAL_DEVICE_ENABLE=0` is set during training**
+
+The model is trained on a MacBook M1 with `tensorflow-metal` installed. Metal uses Apple's GPU and accumulates BatchNormalization running statistics (moving_mean, moving_variance) with Metal's floating-point precision. When the saved model is loaded on a CPU-only Linux server (Azure App Service, HF Spaces, Docker), those statistics produce shifted activations — correct on clean inputs but wrong on borderline digits (e.g. a "4" confidently misclassified as "1"), with no error or warning. Setting `TF_METAL_DEVICE_ENABLE=0` before training forces TensorFlow to use CPU float32, which matches every deployment target exactly. This is the hardware-backend portability problem in ML deployment: a model that passes every local test can silently degrade on a different compute backend.
+
 **Why FastAPI over Flask for this project**
 
 The canvas sends a base64-encoded PNG via `fetch()` to `POST /predict`. FastAPI validates the request body automatically via Pydantic, generates OpenAPI documentation at `/docs` without any extra code, and its ASGI architecture handles concurrent prediction requests without blocking. The consistency with other projects in this portfolio (credit-risk-scorer, cv-gap-analyser) also matters — using FastAPI across multiple projects signals a deliberate architectural choice rather than a one-off experiment.

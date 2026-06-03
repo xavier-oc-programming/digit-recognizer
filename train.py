@@ -1,3 +1,10 @@
+import os
+# Disable Apple Metal GPU so BatchNormalization statistics are computed in
+# standard CPU float32 — required for portable deployment to Linux servers.
+# Without this, moving_mean/moving_variance accumulate with Metal precision
+# and produce shifted activations on CPU inference (Azure, HF Spaces, Docker).
+os.environ['TF_METAL_DEVICE_ENABLE'] = '0'
+
 import json
 import numpy as np
 import matplotlib
