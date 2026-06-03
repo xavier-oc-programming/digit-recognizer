@@ -55,6 +55,7 @@ class DigitPrediction(BaseModel):
     is_uncertain: bool
     probabilities: list[float]
     top3: list[dict]
+    model_input_preview: str = ""  # base64 PNG of the 28x28 image the model actually saw
 
 class HealthResponse(BaseModel):
     status: str
@@ -119,6 +120,13 @@ async def predict(body: PredictionRequest):
         for idx in sorted_idx[:3]
     ]
 
+    # Encode the 28x28 model input as a tiny PNG for client-side debugging
+    preview_pixels = (image_array[0, :, :, 0] * 255).astype('uint8')
+    preview_img = Image.fromarray(preview_pixels, mode='L')
+    preview_buf = io.BytesIO()
+    preview_img.save(preview_buf, format='PNG')
+    preview_b64 = base64.b64encode(preview_buf.getvalue()).decode()
+
     return DigitPrediction(
         digit=digit,
         confidence=confidence,
@@ -126,6 +134,7 @@ async def predict(body: PredictionRequest):
         is_uncertain=confidence < CONFIDENCE_THRESHOLD,
         probabilities=[round(p, 4) for p in probs],
         top3=top3,
+        model_input_preview=preview_b64,
     )
 
 
