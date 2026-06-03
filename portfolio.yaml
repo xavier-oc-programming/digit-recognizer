@@ -1,10 +1,10 @@
 title: Digit Recognizer — CNN on MNIST
 slug: digit-recognizer
 category: ai-ml
-date: 2026-05-DD
+date: 2026-06-03
 featured: false
-tags: deep-learning, neural-network, classification, computer-vision, azure, deployment, REST-API, docker, CI-CD, jupyter, web-app
-tech_stack: Python, TensorFlow, Keras, CNN, scikit-learn, NumPy, Matplotlib, Pillow, FastAPI, Uvicorn, Docker, Azure App Service, GitHub Actions, pytest
+tags: deep-learning, neural-network, classification, computer-vision, azure, hugging-face, deployment, REST-API, docker, CI-CD, jupyter, web-app
+tech_stack: Python, TensorFlow, Keras, CNN, scikit-learn, NumPy, Matplotlib, Pillow, FastAPI, Uvicorn, Docker, Azure App Service, HuggingFace Spaces, GitHub Actions, pytest
 repo_url: https://github.com/xavier-oc-programming/digit-recognizer
 live_url: https://digit-recognizer-xoc.azurewebsites.net
 demo_url: https://digit-recognizer-xoc.azurewebsites.net
@@ -18,23 +18,27 @@ full_description: |
   MaxPooling, followed by Dropout regularisation. A 512-unit Dense layer and softmax output
   complete the classifier. Trained on 60,000 MNIST images with EarlyStopping on validation accuracy.
 
-  A subtle but critical preprocessing step: MNIST uses white digits on black background, while the
-  HTML canvas draws black on white. The pixel values are inverted (1.0 - pixel) before inference
-  to align the input distribution with the training data. This is the kind of silent failure that
-  breaks deployed models when training and inference preprocessing pipelines diverge.
+  Two silent preprocessing bugs were diagnosed and fixed during deployment. First: MNIST convention
+  is white digits on black background; the canvas produces the opposite. Second: training on Apple
+  M1 with tensorflow-metal produces BatchNormalization statistics that differ from CPU inference —
+  causing confident misclassifications on Linux servers with no error or warning. Both fixes are
+  documented in the codebase and README.
 
-  Served via FastAPI with auto-generated OpenAPI docs at /docs. Deployed to Azure App Service
-  with the trained model committed to the repository.
+  Served via FastAPI with auto-generated OpenAPI docs at /docs. Deployed to both Azure App Service
+  and HuggingFace Spaces, with the trained model committed to the repository.
 
 problem: >
-  Demonstrating CNN image classification with an interactive real-time demo — and handling the
-  training-inference preprocessing mismatch between MNIST convention (white-on-black) and
-  canvas convention (black-on-white).
+  Demonstrating CNN image classification with an interactive real-time demo — and handling two
+  training-inference mismatches: MNIST convention (white-on-black) vs canvas convention
+  (black-on-white), and Apple Metal GPU training vs CPU-only Linux deployment.
 
 solution: >
-  Two-block CNN with BatchNormalization and Dropout trained on MNIST. FastAPI serves POST /predict
-  accepting base64-encoded PNG from the canvas. Pixel inversion applied before inference.
-  EarlyStopping prevents overfitting. Model committed to repository for zero-retraining deployment.
+  Two-block CNN trained on CPU (TF_METAL_DEVICE_ENABLE=0) for portable BatchNorm statistics.
+  FastAPI serves POST /predict accepting base64-encoded PNG from the canvas. Pixel inversion
+  (1.0 - pixel) applied before inference to match MNIST format. MNIST-style size normalisation
+  and centre-of-mass centering applied so digit scale matches training data. EarlyStopping
+  prevents overfitting. Model committed to repository for zero-retraining deployment on Azure
+  App Service and HuggingFace Spaces.
 
 challenges: >
   Two training-inference mismatches had to be diagnosed and fixed.

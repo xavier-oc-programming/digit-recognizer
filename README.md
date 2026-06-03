@@ -35,7 +35,7 @@ bar chart across all 10 digits in real time.
 - Python 3.11+
 - `pip` (or a virtual environment manager)
 
-For training: TensorFlow with GPU/MPS acceleration recommended (Apple M1/M2 with `tensorflow-metal`, or CUDA GPU).
+For training: TensorFlow on **CPU only**. If `tensorflow-metal` is installed on M1, set `TF_METAL_DEVICE_ENABLE=0` before training — see section 10 for why.
 
 ---
 
@@ -159,16 +159,16 @@ The full preprocessing pipeline (which must exactly mirror training):
 
 | Digit | Precision | Recall | F1 |
 |---|---|---|---|
-| 0 | 99.4% | 99.5% | 99.4% |
-| 1 | 99.6% | 99.6% | 99.6% |
-| 2 | 99.7% | 99.1% | 99.4% |
-| 3 | 99.3% | 99.7% | 99.5% |
-| 4 | 99.2% | 99.8% | 99.5% |
-| 5 | 98.7% | 99.2% | 98.9% |
-| 6 | 99.4% | 99.3% | 99.3% |
-| 7 | 98.6% | 99.4% | 99.0% |
-| 8 | 99.6% | 98.9% | 99.2% |
-| 9 | 99.5% | 98.4% | 99.0% |
+| 0 | 99.7% | 99.9% | 99.8% |
+| 1 | 99.5% | 99.8% | 99.6% |
+| 2 | 99.0% | 99.8% | 99.4% |
+| 3 | 99.1% | 99.8% | 99.5% |
+| 4 | 99.4% | 99.7% | 99.5% |
+| 5 | 99.0% | 99.4% | 99.2% |
+| 6 | 99.9% | 98.6% | 99.3% |
+| 7 | 99.1% | 99.0% | 99.1% |
+| 8 | 99.1% | 99.3% | 99.2% |
+| 9 | 99.7% | 98.0% | 98.9% |
 
 Hardest digit pairs: **9→4** (9s with closed loops misread as 4), **7→1** (7s without crossbars misread as 1), **5→8** (5s with closed tops misread as 8). These are the same ambiguities that confuse humans.
 
@@ -223,7 +223,7 @@ Hardest digit pairs: **9→4** (9s with closed loops misread as 4), **7→1** (7
 
 **GET /health**
 ```json
-{"status": "ok", "model_loaded": true, "model_accuracy": 0.9924}
+{"status": "ok", "model_loaded": true, "model_accuracy": 0.9935}
 ```
 
 **GET /api/model-info** — returns `model_metrics.json`
@@ -239,8 +239,7 @@ Hardest digit pairs: **9→4** (9s with closed loops misread as 4), **7→1** (7
 ```bash
 az group create --name digit-recognizer-rg --location westeurope
 az appservice plan create --name digit-recognizer-plan \
-  --resource-group digit-recognizer-rg --sku B1 --is-linux
-# Scale to F1 free tier via portal after creation
+  --resource-group digit-recognizer-rg --sku F1 --is-linux
 az webapp create --name digit-recognizer-xoc \
   --resource-group digit-recognizer-rg \
   --plan digit-recognizer-plan --runtime "PYTHON:3.11"
