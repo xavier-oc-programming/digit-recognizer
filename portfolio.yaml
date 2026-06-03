@@ -9,51 +9,26 @@ repo_url: https://github.com/xavier-oc-programming/digit-recognizer
 live_url: https://digit-recognizer-xoc.azurewebsites.net
 demo_url: https://digit-recognizer-xoc.azurewebsites.net
 short_description: Draw a digit on the canvas — the CNN predicts it in real time. Trained on 60,000 MNIST images. Confidence score and probability bar chart across all 10 digits. Live on Azure App Service.
-full_description: |
-  A handwritten digit recognition system built around an interactive canvas demo. The user draws
-  a digit with their mouse or finger and the model returns the predicted digit, confidence score,
-  and a probability distribution across all 10 classes — updated in real time as they draw.
+full_description: >
+  A handwritten digit recognition system built around an interactive canvas demo. The user draws a digit with their mouse or finger and the model returns the predicted digit, confidence score, and a probability distribution across all 10 classes — updated in real time as they draw.
 
-  The model is a two-block CNN: each block applies two Conv2D layers with BatchNormalization and
-  MaxPooling, followed by Dropout regularisation. A 512-unit Dense layer and softmax output
-  complete the classifier. Trained on 60,000 MNIST images with EarlyStopping on validation accuracy.
+  The model is a two-block CNN: each block applies two Conv2D layers with BatchNormalization and MaxPooling, followed by Dropout regularisation. A 512-unit Dense layer and softmax output complete the classifier. Trained on 60,000 MNIST images with EarlyStopping on validation accuracy.
 
-  Two silent preprocessing bugs were diagnosed and fixed during deployment. First: MNIST convention
-  is white digits on black background; the canvas produces the opposite. Second: training on Apple
-  M1 with tensorflow-metal produces BatchNormalization statistics that differ from CPU inference —
-  causing confident misclassifications on Linux servers with no error or warning. Both fixes are
-  documented in the codebase and README.
+  Two silent preprocessing bugs were diagnosed and fixed during deployment. First: MNIST convention is white digits on black background; the canvas produces the opposite. Second: training on Apple M1 with tensorflow-metal produces BatchNormalization statistics that differ from CPU inference — causing confident misclassifications on Linux servers with no error or warning. Both fixes are documented in the codebase and README.
 
-  Served via FastAPI with auto-generated OpenAPI docs at /docs. Deployed to both Azure App Service
-  and HuggingFace Spaces, with the trained model committed to the repository.
+  Served via FastAPI with auto-generated OpenAPI docs at /docs. Deployed to both Azure App Service and HuggingFace Spaces, with the trained model committed to the repository.
 
 problem: >
-  Demonstrating CNN image classification with an interactive real-time demo — and handling two
-  training-inference mismatches: MNIST convention (white-on-black) vs canvas convention
-  (black-on-white), and Apple Metal GPU training vs CPU-only Linux deployment.
+  Demonstrating CNN image classification with an interactive real-time demo — and handling two training-inference mismatches: MNIST convention (white-on-black) vs canvas convention (black-on-white), and Apple Metal GPU training vs CPU-only Linux deployment.
 
 solution: >
-  Two-block CNN trained on CPU (TF_METAL_DEVICE_ENABLE=0) for portable BatchNorm statistics.
-  FastAPI serves POST /predict accepting base64-encoded PNG from the canvas. Pixel inversion
-  (1.0 - pixel) applied before inference to match MNIST format. MNIST-style size normalisation
-  and centre-of-mass centering applied so digit scale matches training data. EarlyStopping
-  prevents overfitting. Model committed to repository for zero-retraining deployment on Azure
-  App Service and HuggingFace Spaces.
+  Two-block CNN trained on CPU (TF_METAL_DEVICE_ENABLE=0) for portable BatchNorm statistics. FastAPI serves POST /predict accepting base64-encoded PNG from the canvas. Pixel inversion (1.0 - pixel) applied before inference to match MNIST format. MNIST-style size normalisation and centre-of-mass centering applied so digit scale matches training data. EarlyStopping prevents overfitting. Model committed to repository for zero-retraining deployment on Azure App Service and HuggingFace Spaces.
 
 challenges: >
   Two training-inference mismatches had to be diagnosed and fixed.
 
-  First: MNIST images are white digits on black background; the HTML canvas produces the opposite.
-  Missing the pixel inversion step produces confident wrong predictions on every input — a silent
-  failure with no error message. The fix is one line (1.0 - pixel) but the diagnosis requires
-  understanding both the training data format and the inference input format.
+  First: MNIST images are white digits on black background; the HTML canvas produces the opposite. Missing the pixel inversion step produces confident wrong predictions on every input — a silent failure with no error message. The fix is one line (1.0 - pixel) but the diagnosis requires understanding both the training data format and the inference input format.
 
-  Second: training on Apple M1 with tensorflow-metal causes BatchNormalization layers to accumulate
-  running statistics (moving_mean, moving_variance) with Metal GPU precision. When the model is
-  deployed to CPU-only Linux servers (Azure App Service, HF Spaces), those statistics produce
-  shifted activations — correct on clean inputs but wrong on borderline digits, with no error or
-  warning. The fix: set TF_METAL_DEVICE_ENABLE=0 before training so statistics are computed in
-  standard CPU float32, matching every deployment target. This is the canonical hardware-backend
-  portability problem in ML deployment.
+  Second: training on Apple M1 with tensorflow-metal causes BatchNormalization layers to accumulate running statistics (moving_mean, moving_variance) with Metal GPU precision. When the model is deployed to CPU-only Linux servers (Azure App Service, HF Spaces), those statistics produce shifted activations — correct on clean inputs but wrong on borderline digits, with no error or warning. The fix: set TF_METAL_DEVICE_ENABLE=0 before training so statistics are computed in standard CPU float32, matching every deployment target. This is the canonical hardware-backend portability problem in ML deployment.
 
 results: 99.35% test accuracy on 10,000 MNIST images. Best epoch 10 (EarlyStopping from 20). All 10 digit classes above 98.9% F1. Hardest pairs: 9→4 (closed loops), 7→1 (missing crossbar), 5→8 (closed top). Baseline (random): 10%. Trained on CPU (TF_METAL_DEVICE_ENABLE=0) for cross-platform portability.
