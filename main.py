@@ -63,6 +63,47 @@ class HealthResponse(BaseModel):
     model_accuracy: float = None
 
 
+# ── MNIST-style normalization ──────────────────────────────────────────────────
+
+def _mnist_normalize(img: np.ndarray) -> np.ndarray:
+    """Scale digit to 20×20 and center by center-of-mass in a 28×28 frame.
+
+    MNIST training images were created this way. Skipping it means a digit
+    filling the full canvas produces a 28×28 image that the model has never
+    seen — causing confident wrong predictions even on clearly drawn digits.
+    """
+    rows = np.any(img > 0.1, axis=1)
+    cols = np.any(img > 0.1, axis=0)
+    if not rows.any():
+        return img  # blank canvas — return as-is
+
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    cmin, cmax = np.where(cols)[0][[0, -1]]
+    digit = img[rmin:rmax + 1, cmin:cmax + 1]
+
+    # Scale longest side to 20px, preserve aspect ratio
+    h, w = digit.shape
+    scale = 20.0 / max(h, w)
+    new_h, new_w = max(1, int(round(h * scale))), max(1, int(round(w * scale)))
+    digit_img = Image.fromarray((digit * 255).astype('uint8'), mode='L')
+    digit_img = digit_img.resize((new_w, new_h), Image.LANCZOS)
+    digit = np.array(digit_img, dtype='float32') / 255.0
+
+    # Place on blank 28×28 canvas using center-of-mass centering
+    result = np.zeros((28, 28), dtype='float32')
+    mass = digit.sum()
+    if mass < 1e-6:
+        return img
+    cy = int(np.sum(digit * np.arange(new_h)[:, None]) / mass)
+    cx = int(np.sum(digit * np.arange(new_w)[None, :]) / mass)
+    y0 = 14 - cy
+    x0 = 14 - cx
+    ys = max(0, -y0);  ye = min(new_h, 28 - y0)
+    xs = max(0, -x0);  xe = min(new_w, 28 - x0)
+    result[y0 + ys:y0 + ye, x0 + xs:x0 + xe] = digit[ys:ye, xs:xe]
+    return result
+
+
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
@@ -103,6 +144,11 @@ async def predict(body: PredictionRequest):
         # Invert pixel values so black-on-white canvas input becomes
         # white-on-black MNIST format. Without this, every prediction is wrong.
         image_array = 1.0 - image_array
+
+        # MNIST digits are size-normalized to ~20x20px and centered in the 28x28
+        # frame using center-of-mass. Without this step, a digit that fills the
+        # full canvas looks completely different from anything in the training set.
+        image_array = _mnist_normalize(image_array)
 
         # Add batch and channel dimensions: (28, 28) → (1, 28, 28, 1)
         image_array = image_array.reshape(1, IMG_SIZE, IMG_SIZE, 1)
