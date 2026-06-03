@@ -31,4 +31,5 @@ challenges: >
 
   Second: training on Apple M1 with tensorflow-metal causes BatchNormalization layers to accumulate running statistics (moving_mean, moving_variance) with Metal GPU precision. When the model is deployed to CPU-only Linux servers (Azure App Service, HF Spaces), those statistics produce shifted activations — correct on clean inputs but wrong on borderline digits, with no error or warning. The fix: set TF_METAL_DEVICE_ENABLE=0 before training so statistics are computed in standard CPU float32, matching every deployment target. This is the canonical hardware-backend portability problem in ML deployment.
 
-results: 99.35% test accuracy on 10,000 MNIST images. Best epoch 10 (EarlyStopping from 20). All 10 digit classes above 98.9% F1. Hardest pairs: 9→4 (closed loops), 7→1 (missing crossbar), 5→8 (closed top). Baseline (random): 10%. Trained on CPU (TF_METAL_DEVICE_ENABLE=0) for cross-platform portability.
+results: >
+  99.35% test accuracy on 10,000 MNIST images. Best epoch 10 (EarlyStopping from 20). All 10 digit classes above 98.9% F1. Hardest pairs: 9 to 4 (closed loops), 7 to 1 (missing crossbar), 5 to 8 (closed top). Baseline (random): 10%. Trained on CPU (TF_METAL_DEVICE_ENABLE=0) for cross-platform portability.
