@@ -52,4 +52,4 @@ challenges: >
   standard CPU float32, matching every deployment target. This is the canonical hardware-backend
   portability problem in ML deployment.
 
-results: 99.30% test accuracy on 10,000 MNIST images. Best epoch 8 (EarlyStopping from 20). All 10 digit classes above 98.9% F1. Hardest pairs: 9→4 (closed loops), 7→1 (missing crossbar), 5→8 (closed top). Baseline (random): 10%.
+results: 99.35% test accuracy on 10,000 MNIST images. Best epoch 10 (EarlyStopping from 20). All 10 digit classes above 98.9% F1. Hardest pairs: 9→4 (closed loops), 7→1 (missing crossbar), 5→8 (closed top). Baseline (random): 10%. Trained on CPU (TF_METAL_DEVICE_ENABLE=0) for cross-platform portability.

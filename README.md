@@ -150,9 +150,9 @@ The full preprocessing pipeline (which must exactly mirror training):
 
 | Metric | Value |
 |---|---|
-| Test accuracy | **99.30%** |
-| Test loss | 0.0199 |
-| Best epoch | 8 / 20 (EarlyStopping) |
+| Test accuracy | **99.35%** |
+| Test loss | 0.0210 |
+| Best epoch | 10 / 20 (EarlyStopping) |
 | Baseline (random) | 10.0% |
 
 **Per-class F1 scores** — all digits above 98.9%:
