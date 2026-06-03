@@ -1,3 +1,12 @@
+---
+title: Digit Recognizer
+emoji: ✏️
+colorFrom: green
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
 # digit-recognizer
 
 Draw a digit. The model tells you what it is.

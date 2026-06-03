@@ -229,6 +229,11 @@
       <canvas id="canvas" width="280" height="280"></canvas>
       <p class="canvas-hint">Draw with mouse or finger</p>
       <button class="btn-clear" id="btn-clear">Clear</button>
+      <div id="debug-row" style="display:none;align-items:center;gap:12px;margin-top:4px;">
+        <span style="color:#6b7280;font-size:0.72rem;">Sent to model →</span>
+        <img id="debug-preview" width="56" height="56"
+             style="border:1px solid #374151;border-radius:4px;background:#fff;" />
+      </div>
     </div>
 
     <div class="loading-indicator" id="loading">
@@ -271,7 +276,7 @@
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 18;
+    ctx.lineWidth = 24;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
@@ -295,20 +300,25 @@
       };
     }
 
+    let lastPos = null;
+
     function startDraw(e) {
       e.preventDefault();
       drawing = true;
-      const p = getPos(e);
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
+      lastPos = getPos(e);
     }
 
     function draw(e) {
       if (!drawing) return;
       e.preventDefault();
       const p = getPos(e);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
+      if (lastPos) {
+        ctx.beginPath();
+        ctx.moveTo(lastPos.x, lastPos.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+      lastPos = p;
       hasDrawing = true;
       schedulePrediction();
     }
@@ -317,6 +327,7 @@
       if (!drawing) return;
       e.preventDefault();
       drawing = false;
+      lastPos = null;
     }
 
     canvas.addEventListener('mousedown',  startDraw);
@@ -333,9 +344,11 @@
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       hasDrawing = false;
+      lastPos = null;
       clearTimeout(debounceTimer);
       document.getElementById('results').style.display = 'none';
       document.getElementById('loading').classList.remove('active');
+      document.getElementById('debug-row').style.display = 'none';
     });
 
     // ── Prediction ────────────────────────────────────────────────────────────
@@ -348,7 +361,13 @@
 
     async function sendPrediction() {
       document.getElementById('loading').classList.add('active');
-      const imageData = canvas.toDataURL('image/png').split(',')[1];
+      const dataURL = canvas.toDataURL('image/png');
+      const imageData = dataURL.split(',')[1];
+      // Show debug preview so we can confirm the canvas is captured correctly
+      const debugRow = document.getElementById('debug-row');
+      const debugImg = document.getElementById('debug-preview');
+      debugImg.src = dataURL;
+      debugRow.style.display = 'flex';
       try {
         const resp = await fetch('/predict', {
           method: 'POST',
